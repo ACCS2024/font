@@ -274,7 +274,18 @@ install_custom_fonts() {
         "$SHA256_VNF"
 
     log "刷新字体缓存..."
-    command -v fc-cache &>/dev/null && fc-cache -fv || warn "fc-cache 未找到，请手动刷新字体缓存"
+    # fc-cache 来自 fontconfig 包，缺失时自动安装
+    if ! command -v fc-cache &>/dev/null; then
+        local pkg_mgr
+        pkg_mgr=$(detect_pkg_mgr)
+        log "fc-cache 未找到，尝试安装 fontconfig..."
+        case "$pkg_mgr" in
+            apt)     $SUDO apt-get install -y -qq fontconfig ;;
+            dnf|yum) $SUDO $pkg_mgr install -y fontconfig ;;
+            *)       warn "无法自动安装 fontconfig，请手动安装后运行 fc-cache -fv"; return 0 ;;
+        esac
+    fi
+    fc-cache -fv
 }
 
 # ================================================================
